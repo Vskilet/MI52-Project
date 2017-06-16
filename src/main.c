@@ -83,9 +83,7 @@ int main()
   for(;;){
     __asm("nop");
     uint32_t nb_read = I2C_Communication(I2C1, data, NBDATA);
-    for (int i = 0; i < nb_read; i++) {
-      printf("%d\r\n", data[i]);
-    }
+    printf("%x\r\n", data[0]);
     //UART_Transmit(USART2, "polling\r\n", 10);
     //UART_Transmit_IT(USART2, "interrupt\r\n", 12);
     printf("printf\r\n");

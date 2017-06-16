@@ -65,84 +65,35 @@ uint32_t I2C_Communication(I2C_TypeDef * i2c, uint8_t * data, uint32_t len){
 	i2c->CR1 |= I2C_CR1_START;
 	while(!(i2c->SR1 & I2C_SR1_SB));
 	printf("Reset SB flag\r\n");
-	i2c->DR |= 0b10111110; //would like to write an adress
+	i2c->DR = 0x3C; //0b10111110; //would like to write an adress
+
 	while (!(i2c->SR1 & I2C_SR1_ADDR)); //wait ADDR is set
 	if (i2c->SR1 && i2c->SR2){	// clear ADDR flag
 		__asm("nop");
 		printf("Reset ADDR Flag\r\n");
 	}
-	while (!(i2c->SR1 & I2C_SR1_TXE));
-	i2c->DR |= 0x28;
-	while (!(i2c->SR1 & I2C_SR1_BTF));
+
+	//while (!(i2c->SR1 & I2C_SR1_TXE));
+	i2c->DR = 0x28;
+	//while (!(i2c->SR1 & I2C_SR1_BTF));
 
 	i2c->CR1 |= I2C_CR1_START;
 	while(!(i2c->SR1 & I2C_SR1_SB));
-	i2c->DR |= 0b10111111; //would like to read an adress
+	i2c->DR = 0x3D; //0b10111111; //would like to read an adress
+
 	while (!(i2c->SR1 & I2C_SR1_ADDR)); //wait ADDR is set
 	if (i2c->SR1 && i2c->SR2){	// clear ADDR flag
 		__asm("nop");
 		printf("Reset ADDR Flag\r\n");
 	}
-	for (int i=0;i<len;i++) {
-		*data++ = i2c->DR;
-		nb_read++;
-	}
-	/* i2c->CR1 &= ~I2C_CR1_ACK; // ACK low
-	i2c->CR1 |= I2C_CR1_POS; // POS high */
+
+	//i2c->CR1 &= ~I2C_CR1_ACK; // ACK low
+	i2c->CR1 |= I2C_CR1_POS; // POS high
+	//while(!(i2c->SR1 & I2C_SR1_BTF));
+
+	*data++ = i2c->DR;
+	nb_read++;
 
 	i2c->CR1 |= I2C_CR1_STOP;	//Set STOP high
-	//Read DR
-
-}
-
-uint32_t I2C_Receive(I2C_TypeDef * i2c, uint8_t * data, uint32_t len, uint32_t timeout)
-{
-	uint32_t dec;
-
-	/* test the lock */
-	if ((i2c_device.state & RX_LOCK) == RX_LOCK)
-	return -1;
-	/* get the lock*/
-	i2c_device.state &= RX_LOCK;
-
-	while (len > 0){
-		dec = timeout;
-		/* wait for a new char */
-		while (!(i2c->SR1 & I2C_SR1_RXNE)) {
-			if (timeout-- == 0)
-			return len;
-		}
-		/* get the data */
-		*data++ = (i2c->DR & 0xFF);
-		len--;
-	}
-
-	/*release the lock */
-	i2c_device.state &= RX_LOCK;
-
-	return len;
-}
-
-uint32_t I2C_Transmit(I2C_TypeDef * i2c, uint8_t * data, uint32_t len)
-{
-	/* test the lock */
-	if ((i2c_device.state & TX_LOCK) == TX_LOCK)
-		return -1;
-	/* get the lock*/
-	i2c_device.state &= TX_LOCK;
-
-
-	while (len-->0){
-		/* wait for TX data register to be empty */
-		while (!(i2c->SR1 & I2C_SR1_TXE)){
-		}
-		i2c->DR = *data++;
-	}
-	/* wait last char to be finished (optionnal) */
-	//while (!(i2c->SR & I2C_SR1_TC));
-
-	/*release the lock */
-	i2c_device.state &= TX_LOCK;
-
-	return len;
+	return nb_read;
 }

@@ -17,8 +17,6 @@ typedef struct I2C_Device {
 }I2C_Device;
 
 void I2C_Init();
-uint32_t I2C_Receive(I2C_TypeDef * i2c, uint8_t * data, uint32_t len, uint32_t timeout);
-uint32_t I2C_Transmit(I2C_TypeDef * i2c, uint8_t * data, uint32_t len);
 uint32_t I2C_Communication(I2C_TypeDef * i2c, uint8_t * data, uint32_t len);
 
 #endif /* __I2C_H */
