@@ -78,15 +78,49 @@ int main()
   I2C_Init();
   uint8_t data[NBDATA];
   printf("Initialization set\r\n");
+  I2C_Configuration(I2C1);
+
 
   /* main application */
   for(;;){
     __asm("nop");
-    uint32_t nb_read = I2C_Communication(I2C1, data, NBDATA);
-    printf("%x\r\n", data[0]);
-    //UART_Transmit(USART2, "polling\r\n", 10);
-    //UART_Transmit_IT(USART2, "interrupt\r\n", 12);
-    printf("printf\r\n");
+    I2C_Communication(I2C1, data, T0_degC_x8);
+     uint8_t t0DegC = data[0];
+    I2C_Communication(I2C1, data, T1_degC_x8);
+    uint8_t t1DegC = data[0];
+    printf("t0DegC, t1DegC  \r%x\t%x\n", t0DegC, t1DegC );
+    I2C_Communication(I2C1, data, T0_OUT_R);
+    uint16_t t0Out = ((data[0]) << 8);
+
+    I2C_Communication(I2C1, data, T0_OUT_L);
+    t0Out |= data[0];
+    printf("************\r\n");
+    printf("\rt0Out %x\n", t0Out);
+
+    I2C_Communication(I2C1, data, T1_OUT_R);
+    uint16_t t1Out = ((data[0]) << 8);
+
+    I2C_Communication(I2C1, data, T1_OUT_L);
+    t1Out |= data[0];
+    printf("\rt1Out %x\n", t1Out);
+    printf("************\r\n");
+
+
+    I2C_Communication(I2C1, data, TEMP_OUT_H);
+    uint16_t temp = ((data[0]) << 8);
+    I2C_Communication(I2C1, data, TEMP_OUT_L);
+    temp |= data[0];
+    printf("\r%x\n", temp);
+    /*printf("T0_OUT : %d\r\n",t0Out);
+    printf("T1_OUT : %d\r\n",t1Out);
+    printf("T0_Deg : %d\r\n",t1Out);
+    printf("T1_Deg : %d\r\n",t1Out);*/
+
+    int coeff = (t1Out - t0Out)/(t1DegC - t0DegC);
+    printf("%d\r\n", coeff);
+    int b = t1Out - coeff*t0DegC;
+    printf("*****\n\rTEMP : %d\r\n******\r\n", (coeff*temp+b));
+    wait_ms(500);
   }
   return 1;
 }

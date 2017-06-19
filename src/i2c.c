@@ -36,6 +36,7 @@ void I2C_Init(){
 	gpiob->OTYPER |= (1 << 8) | (1<<9);
 
 	/*-------------- I2C parameters configuration --------------- */
+	i2c->CR1 &= ~I2C_CR1_PE;
 	i2c->CR1 &= ~I2C_CR1_SMBUS; // (optionnal) i2c mode
 	i2c->CR2 |= (42 & I2C_CR2_FREQ); //mask to be sure not modified anything else
 																// for the value see set_clk.c
@@ -60,40 +61,60 @@ void I2C_Init(){
  * received Temperature
  *
  */
-uint32_t I2C_Communication(I2C_TypeDef * i2c, uint8_t * data, uint32_t len){
-	printf("Start communication\r\n");
+void I2C_Communication(I2C_TypeDef * i2c, uint8_t * data, uint16_t cible){
+	uint16_t clearAddr;
 	i2c->CR1 |= I2C_CR1_START;
 	while(!(i2c->SR1 & I2C_SR1_SB));
-	printf("Reset SB flag\r\n");
-	i2c->DR = 0x3C; //0b10111110; //would like to write an adress
+	i2c->DR = 0xBE; //would like to write an adress
 
 	while (!(i2c->SR1 & I2C_SR1_ADDR)); //wait ADDR is set
-	if (i2c->SR1 && i2c->SR2){	// clear ADDR flag
-		__asm("nop");
-		printf("Reset ADDR Flag\r\n");
-	}
+	//Clear ADDR
+	clearAddr = i2c->SR1;
+	clearAddr = i2c->SR2;
 
-	//while (!(i2c->SR1 & I2C_SR1_TXE));
-	i2c->DR = 0x28;
-	//while (!(i2c->SR1 & I2C_SR1_BTF));
+	i2c->DR = cible;
 
 	i2c->CR1 |= I2C_CR1_START;
 	while(!(i2c->SR1 & I2C_SR1_SB));
-	i2c->DR = 0x3D; //0b10111111; //would like to read an adress
+	i2c->DR = 0xBF; //would like to read an adress
 
 	while (!(i2c->SR1 & I2C_SR1_ADDR)); //wait ADDR is set
-	if (i2c->SR1 && i2c->SR2){	// clear ADDR flag
-		__asm("nop");
-		printf("Reset ADDR Flag\r\n");
-	}
-
-	//i2c->CR1 &= ~I2C_CR1_ACK; // ACK low
+	i2c->CR1 &= ~I2C_CR1_ACK; // ACK low
 	i2c->CR1 |= I2C_CR1_POS; // POS high
-	//while(!(i2c->SR1 & I2C_SR1_BTF));
+
+	//Clear ADDR
+	clearAddr = i2c->SR1;
+	clearAddr = i2c->SR2;
+	/*if (i2c->SR1 && i2c->SR2){	// clear ADDR flag
+		__asm("nop");
+		printf("Reset ADDR Flag\r\n");
+	}*/
+
+	while(!(i2c->SR1 & I2C_SR1_RXNE));
 
 	*data++ = i2c->DR;
 	nb_read++;
 
 	i2c->CR1 |= I2C_CR1_STOP;	//Set STOP high
-	return nb_read;
+}
+
+void I2C_Configuration(I2C_TypeDef * i2c){
+	uint16_t clearAddr;
+	i2c->CR1 |= I2C_CR1_START;
+	while(!(i2c->SR1 & I2C_SR1_SB));
+	i2c->DR = 0xBE; //would like to write an adress
+
+	while (!(i2c->SR1 & I2C_SR1_ADDR)); //wait ADDR is set
+	//Clear ADDR
+	clearAddr = i2c->SR1;
+	clearAddr = i2c->SR2;
+
+	i2c->DR = 0x20;
+
+	while(!(i2c->SR1 & I2C_SR1_TXE));
+
+	i2c->DR = 0x87;
+	while(!(i2c->SR1 & I2C_SR1_TXE));
+	i2c->CR1 |= I2C_CR1_STOP;	//Set STOP high
+
 }
