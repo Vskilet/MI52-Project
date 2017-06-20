@@ -80,46 +80,46 @@ int main()
   printf("Initialization set\r\n");
   I2C_Configuration(I2C1);
 
+  I2C_Communication(I2C1, data, T0_degC_x8);
+  int16_t t0DegC = (data[0]);
+  I2C_Communication(I2C1, data, T1_degC_x8);
+  int16_t t1DegC = (data[0]);
+  I2C_Communication(I2C1, data, T_msb);
+  t0DegC |= (((data[0]) & (0x03)) << 8);
+  t1DegC |= (((data[0]) & (0x0C)) << 6);
+
+  t0DegC = t0DegC >> 3;
+  t1DegC = t1DegC >> 3;
+  printf("\r\n************\r\n");
+  printf("\rt0DegC %d\t t1DegC %d\n", t0DegC, t1DegC );
+
+  I2C_Communication(I2C1, data, T0_OUT_H);
+  int16_t t0Out = ((data[0]) << 8);
+  I2C_Communication(I2C1, data, T0_OUT_L);
+  t0Out |= data[0];
+
+  I2C_Communication(I2C1, data, T1_OUT_H);
+  int16_t t1Out = ((data[0]) << 8);
+  I2C_Communication(I2C1, data, T1_OUT_L);
+  t1Out |= data[0];
+
+  printf("\rt0Out %d\t t1Out %d\n",t0Out, t1Out);
+  printf("\r************\r\n");
 
   /* main application */
   for(;;){
     __asm("nop");
-    I2C_Communication(I2C1, data, T0_degC_x8);
-     uint8_t t0DegC = data[0];
-    I2C_Communication(I2C1, data, T1_degC_x8);
-    uint8_t t1DegC = data[0];
-    printf("t0DegC, t1DegC  \r%x\t%x\n", t0DegC, t1DegC );
-    I2C_Communication(I2C1, data, T0_OUT_R);
-    uint16_t t0Out = ((data[0]) << 8);
-
-    I2C_Communication(I2C1, data, T0_OUT_L);
-    t0Out |= data[0];
-    printf("************\r\n");
-    printf("\rt0Out %x\n", t0Out);
-
-    I2C_Communication(I2C1, data, T1_OUT_R);
-    uint16_t t1Out = ((data[0]) << 8);
-
-    I2C_Communication(I2C1, data, T1_OUT_L);
-    t1Out |= data[0];
-    printf("\rt1Out %x\n", t1Out);
-    printf("************\r\n");
-
 
     I2C_Communication(I2C1, data, TEMP_OUT_H);
-    uint16_t temp = ((data[0]) << 8);
+    int16_t tOut = ((data[0]) << 8);
     I2C_Communication(I2C1, data, TEMP_OUT_L);
-    temp |= data[0];
-    printf("\r%x\n", temp);
-    /*printf("T0_OUT : %d\r\n",t0Out);
-    printf("T1_OUT : %d\r\n",t1Out);
-    printf("T0_Deg : %d\r\n",t1Out);
-    printf("T1_Deg : %d\r\n",t1Out);*/
+    tOut |= data[0];
 
-    int coeff = (t1Out - t0Out)/(t1DegC - t0DegC);
-    printf("%d\r\n", coeff);
-    int b = t1Out - coeff*t0DegC;
-    printf("*****\n\rTEMP : %d\r\n******\r\n", (coeff*temp+b));
+    uint32_t tempCalc;
+
+    tempCalc = ((((t1DegC - t0DegC)*(tOut - t0Out))/(t1Out - t0Out)) + t0DegC);
+
+    printf("*****\n\rTEMPERATURE MA GUEULE : %d C°\r\n******\r\n", tempCalc);
     wait_ms(500);
   }
   return 1;
